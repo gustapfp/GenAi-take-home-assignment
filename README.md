@@ -1,1 +1,1 @@
-# GenAi-take-home-assignment
+# GenAi Take Home Assignment
