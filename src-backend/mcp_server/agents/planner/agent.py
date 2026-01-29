@@ -2,9 +2,7 @@ from mcp_server.agents.planner.schemas import PresentationPayload, PresentationP
 from mcp_server.agents.planner.prompts import SYSTEM_PROMPT, USER_PROMPT
 from openai import AsyncOpenAI
 from core.settings import settings
-from structlog import get_logger
-
-logger = get_logger()
+from core.logger_config import logger
 
 
 class PlannerAgent:
@@ -13,8 +11,6 @@ class PlannerAgent:
     """
 
     def __init__(self):
-        self.name = "PlannerAgent"
-        self.description = "A planner agent that creates a presentation plan"
         self.model = "gpt-4o-mini"
         self.client = AsyncOpenAI(api_key=settings.OPENAI_API_KEY)
         self.retry_count = 0
