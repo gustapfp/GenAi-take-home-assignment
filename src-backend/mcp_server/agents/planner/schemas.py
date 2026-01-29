@@ -14,3 +14,8 @@ class SlidePlan(BaseModel):
 class PresentationPlan(BaseModel):
     topic: str
     slides: List[SlidePlan]
+
+
+class PresentationPayload(BaseModel):
+    topic: str
+    num_slides: int
