@@ -5,7 +5,7 @@ from pydantic import ValidationError
 from app.routes.presentation.utils import generate_pprt_id
 from app.routes.presentation.schemas import PresentationDownloadResponse, PresentationRequest, PresentationResponse
 from mcp_server.workflow import main_workflow
-from app.consts import FILE_PATH
+from core.consts import FILE_PATH
 
 presentation_router = APIRouter(
     prefix="/presentation",
@@ -44,7 +44,7 @@ async def generate_ppt(request: PresentationRequest, background_tasks: Backgroun
         )
 
 
-@presentation_router.get("/download_ppt/{pprt_id}")
+@presentation_router.get("/download/{pprt_id}", response_model=None)
 async def download_ppt(pprt_id: str) -> FileResponse | PresentationDownloadResponse:
     """Download the PowerPoint presentation based on the given presentation ID.
 
