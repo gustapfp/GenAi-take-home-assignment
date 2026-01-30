@@ -497,7 +497,3 @@ class TestPresentationRoutes:
                     response.headers["content-type"]
                     == "application/vnd.openxmlformats-officedocument.presentationml.presentation"
                 )
-
-
-if __name__ == "__main__":
-    pytest.main([__file__, "-v", "--tb=short"])
