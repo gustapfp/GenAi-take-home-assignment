@@ -11,13 +11,27 @@ class SourceValidator:
         }
 
     def normalize_url(self, url: str) -> str:
-        """Removes query parameters (UTM, etc.) and fragments."""
+        """Removes query parameters (UTM, etc.) and fragments from the URL.
+
+        Args:
+            url (str): The URL to normalize.
+
+        Returns:
+            str: The normalized URL.
+        """
         parsed = urlparse(url)
         clean_url = urlunparse((parsed.scheme, parsed.netloc, parsed.path, "", "", ""))
         return clean_url
 
     def get_metadata(self, html_soup) -> dict:
-        """Extracts author, date, and reference indicators."""
+        """Extracts author, date, and reference indicators from the HTML soup.
+
+        Args:
+            html_soup (BeautifulSoup): The HTML soup to extract metadata from.
+
+        Returns:
+            dict: The metadata.
+        """
         meta = {"author": None, "date": None, "has_references": False}
 
         author_tag = html_soup.find("meta", {"name": "author"}) or html_soup.find(
@@ -43,66 +57,76 @@ class SourceValidator:
 
         return meta
 
-    def validate_url(self, url: str) -> dict:
-        """Performs the full health check and scoring."""
+    def validate_url(self, url: str, tavily_confidence: float) -> dict:
+        """Performs the full health check and scoring.
+        Calculates a Hybrid Score with tavily confidence as the base points.
+        Args:
+            url (str): The URL to validate.
+
+        Returns:
+            dict: The validation result.
+        """
         clean_url = self.normalize_url(url)
+        base_points = tavily_confidence * 100
+        result = {"url": clean_url, "status": "dead", "score": 0, "tier": "C", "details": {}}
+
         result = {"url": clean_url, "status": "dead", "score": 0, "tier": "C", "details": {}}
 
         try:
+            # 1. Health Check
             response = requests.get(clean_url, headers=self.headers, timeout=5)
             if response.status_code != 200:
+                result["details"]["error"] = f"Status {response.status_code}"
                 return result
 
             result["status"] = "live"
             soup = BeautifulSoup(response.content, "html.parser")
-
             meta = self.get_metadata(soup)
             result["details"] = meta
 
-            score = 20
-
-            domain = urlparse(clean_url).netloc  # Domain trust bonus
-            if domain.endswith((".edu", ".gov")):
-                score += 20
+            # 2. Score Calculation
+            final_score = base_points
 
             if meta["author"]:
-                score += 20
+                final_score += 10
             if meta["date"]:
-                score += 20
-            if meta["has_references"]:
-                score += 20
+                final_score += 5
 
-            result["score"] = min(score, 100)
+            # Bonuses for Domain Authority
+            domain = urlparse(clean_url).netloc
+            if domain.endswith((".edu", ".gov")):
+                final_score += 15
 
-            if score >= 80:
-                result["tier"] = "S"  # Gold standard
-            elif score >= 50:
-                result["tier"] = "A"  # Reliable
+            result["score"] = min(round(final_score, 2), 100)
+
+            # 3. Tier Assignment
+            if result["score"] >= 80:
+                result["tier"] = "S"
+            elif result["score"] >= 60:
+                result["tier"] = "A"
             else:
-                result["tier"] = "B"  # Shouldn't be used caution
+                result["tier"] = "B"
 
         except Exception as e:
-            result["error"] = str(e)
+            result["details"]["error"] = str(e)
 
         return result
 
     def rank_sources(self, raw_results: list[dict]) -> list[dict]:
-        """Ranks the sources based on the validation score.
-
-        Args:
-            raw_results (list[dict]): The raw results from the web search.
-
-        Returns:
-            list[dict]: The ranked results.
+        """
+        raw_results must include: {'url': '...', 'score': 0.81, ...}
         """
         ranked_results = []
         for item in raw_results:
             url = item.get("url", "")
-            validation = self.validate_url(url)
+            t_score = item.get("score", 0.5)  # Default to 0.5 if missing
+
+            validation = self.validate_url(url, tavily_confidence=t_score)
 
             ranked_item = {**item, "validation": validation}
             ranked_results.append(ranked_item)
 
+        # Sort by Final Score (High to Low)
         return sorted(ranked_results, key=lambda x: x["validation"]["score"], reverse=True)
 
 
