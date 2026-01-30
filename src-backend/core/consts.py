@@ -9,6 +9,9 @@ DOMAIN_BLACKLIST = [
     "twitter.com",
     "facebook.com",
     "instagram.com",
+    "youtube.com",
+    "tiktok.com",
+    "linkedin.com",
 ]
 
 DOMAIN_WHITELIST = [

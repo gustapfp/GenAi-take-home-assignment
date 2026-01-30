@@ -1,6 +1,7 @@
 import json
 import os
 from datetime import datetime
+from pathlib import Path
 from typing import Literal
 
 import numpy as np
@@ -75,7 +76,9 @@ def create_presentation(filename: str, slides_content: str) -> str:
     """
     try:
         data = json.loads(slides_content)
-        prs = Presentation()
+
+        template_path = Path(__file__).resolve().parent / "helper" / "template.pptx"
+        prs = Presentation(str(template_path))
 
         for slide_data in data:
             # -- Bullet layout --
@@ -90,9 +93,29 @@ def create_presentation(filename: str, slides_content: str) -> str:
             # -- Body --
             body_shape = slide.placeholders[1]
             tf = body_shape.text_frame
-            for point in slide_data.get("points", []):
+            tf.clear()
+            for i, point in enumerate(slide_data.get("points", [])):
                 p = tf.add_paragraph()
                 p.text = point
+                # for run in p.runs:
+                #     run.font.size = Pt(12) if i == 0 else Pt(10)
+
+            # -- Speaker Notes & Sources --
+            speaker_notes = slide_data.get("speaker_notes", "")
+            sources = slide_data.get("sources", [])
+            if speaker_notes or sources:
+                notes_slide = slide.notes_slide
+                text_frame = notes_slide.notes_text_frame
+                content = speaker_notes if speaker_notes else ""
+
+                if sources:
+                    if content:
+                        content += "\n\n"
+                    content += "Sources:\n" + "\n".join(f"- {url}" for url in sources)
+                if text_frame:
+                    text_frame.text = content
+
+            # -- Image --
             image_path = slide_data.get("image")
             if image_path and os.path.exists(image_path):
                 try:
@@ -101,7 +124,7 @@ def create_presentation(filename: str, slides_content: str) -> str:
                     height = Inches(3.5)
                     slide.shapes.add_picture(image_path, left, top, height=height)
                 except Exception as e:
-                    print(f"Warning: Could not add image {image_path}: {e}")
+                    logger.warning(f"Could not add image {image_path}: {e}")
         path = FILE_PATH / f"{filename}.pptx"
         path.parent.mkdir(parents=True, exist_ok=True)
         prs.save(str(path.resolve()))
@@ -111,7 +134,7 @@ def create_presentation(filename: str, slides_content: str) -> str:
 
 
 @mcp_server.tool(
-    name="generate_visual_assets",
+    name="generate_chart",
     description="Generate visual assets for the presentation.",
 )
 def generate_chart(data_json: str, chart_type: str, title: str) -> str:
@@ -203,11 +226,6 @@ def get_stock_image(query: str) -> str:
     try:
         sanitized_query = query.replace(" ", ",")
         image_url = f"https://source.unsplash.com/800x600/?{sanitized_query}"
-        safe_query = query.replace(" ", "%20")
-        image_url = (
-            f"https://image.pollinations.ai/prompt/{safe_query}?width=800&height=600&nologo=true"
-        )
-
         response = requests.get(image_url, timeout=10)
         if response.status_code != 200:
             return f"Error: Failed to download image (Status {response.status_code})"
