@@ -1,11 +1,11 @@
-from typing import List
 from mcp import ClientSession
 from mcp.types import TextContent
 from openai import AsyncOpenAI
-from core.settings import settings
+
 from core.logger_config import logger
-from mcp_server.agents.researcher.schemas import ResearchSummary, ResearcherPayload
+from core.settings import settings
 from mcp_server.agents.researcher.prompts import SYSTEM_PROMPT, USER_PROMPT
+from mcp_server.agents.researcher.schemas import ResearcherPayload, ResearchSummary
 
 
 class ResearcherAgent:
@@ -18,7 +18,9 @@ class ResearcherAgent:
         self.client = AsyncOpenAI(api_key=settings.OPENAI_API_KEY)
         self.retry_count = 0
 
-    async def research_web(self, payload: ResearcherPayload, session: ClientSession) -> ResearchSummary:
+    async def research_web(
+        self, payload: ResearcherPayload, session: ClientSession
+    ) -> ResearchSummary:
         """Researches the web for information based on the presentation plan.
 
         Args:
@@ -39,7 +41,7 @@ class ResearcherAgent:
 
         return ResearchSummary(slide_topic=payload.slide_title, facts=raw_context)
 
-    async def summarize_facts(self, raw_context: List[str], slide_title: str) -> ResearchSummary:
+    async def summarize_facts(self, raw_context: list[str], slide_title: str) -> ResearchSummary:
         """Summarizes the facts from the raw context.
 
         Args:
@@ -57,7 +59,9 @@ class ResearcherAgent:
                     {"role": "system", "content": SYSTEM_PROMPT},
                     {
                         "role": "user",
-                        "content": USER_PROMPT.format(slide_title=slide_title, joined_context=joined_context),
+                        "content": USER_PROMPT.format(
+                            slide_title=slide_title, joined_context=joined_context
+                        ),
                     },
                 ],
                 response_format=ResearchSummary,
@@ -67,11 +71,13 @@ class ResearcherAgent:
             return await self._validate_response(summary, slide_title, raw_context)
 
         except Exception as e:
-            logger.error(f"ERROR_RESEARCHER_AGENT: Error summarizing facts for slide: {slide_title} - error: {e}")
+            logger.error(
+                f"ERROR_RESEARCHER_AGENT: Error summarizing facts for slide: {slide_title} - error: {e}"
+            )
             raise e
 
     async def _validate_response(
-        self, summary: ResearchSummary | None, slide_title: str, raw_context: List[str]
+        self, summary: ResearchSummary | None, slide_title: str, raw_context: list[str]
     ) -> ResearchSummary:
         """Validates the response from the agent with a retry mechanism which calls the summarize_facts method if the response is None.
 
