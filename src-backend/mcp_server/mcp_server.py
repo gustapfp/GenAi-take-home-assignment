@@ -7,12 +7,22 @@ import numpy as np
 from matplotlib import pyplot as plt
 from mcp.server.fastmcp import FastMCP
 from pptx import Presentation
-from pptx.util import Inches
 from tavily import TavilyClient  # type: ignore
 
-from core.consts import DOMAIN_BLACKLIST, FILE_PATH
+from core.consts import (
+    BODY_FONT_SIZE,
+    BODY_FONT_SIZE_WITH_IMAGE,
+    BODY_LINE_SPACING,
+    BODY_WIDTH_WITH_IMAGE,
+    DOMAIN_BLACKLIST,
+    FILE_PATH,
+    IMAGE_HEIGHT,
+    IMAGE_LEFT,
+    IMAGE_TOP,
+)
 from core.logger_config import logger
 from core.settings import settings
+from mcp_server.helper.ppt_style import apply_body_style, apply_title_style
 from mcp_server.helper.source_validator import source_validator
 
 mcp_server = FastMCP("PPT-Generator-Tools")
@@ -78,22 +88,61 @@ def create_presentation(filename: str, slides_content: str) -> str:
         prs = Presentation()
 
         for slide_data in data:
-            # -- Bullet layout --
-            slide_layout = prs.slide_layouts[1]
+            slide_layout = prs.slide_layouts[0]
+            for layout in prs.slide_layouts:
+                layout_name = layout.name.lower()
+                if "content" in layout_name or "text" in layout_name:
+                    slide_layout = layout
+                    break
+                if "title" in layout_name and "only" not in layout_name:
+                    slide_layout = layout
+
             slide = prs.slides.add_slide(slide_layout)
+
+            image_path = slide_data.get("image")
+            has_image = image_path and os.path.exists(image_path)
 
             # -- Title --
             title = slide.shapes.title
             if title:
                 title.text = slide_data.get("title", "No Title")
+                apply_title_style(title)
 
             # -- Body --
-            body_shape = slide.placeholders[1]
-            tf = body_shape.text_frame
-            tf.clear()
-            for i, point in enumerate(slide_data.get("points", [])):
-                p = tf.add_paragraph()
-                p.text = point
+
+            body_shape = None
+            for shape in slide.placeholders:
+                if hasattr(shape, "placeholder_format") and shape.placeholder_format.idx == 1:
+                    body_shape = shape
+                    break
+
+            if body_shape is None:
+                placeholders = list(slide.placeholders)
+                if len(placeholders) > 1:
+                    body_shape = placeholders[1]
+
+            if body_shape:
+                tf = body_shape.text_frame  # pyright: ignore[reportAttributeAccessIssue]
+                tf.word_wrap = True
+
+                if has_image:
+                    body_shape.width = BODY_WIDTH_WITH_IMAGE
+
+                font_size = BODY_FONT_SIZE_WITH_IMAGE if has_image else BODY_FONT_SIZE
+
+                points = slide_data.get("points", [])
+
+                if points:
+                    tf.paragraphs[0].text = points[0]
+                    apply_body_style(tf.paragraphs[0], font_size)
+                    tf.paragraphs[0].level = 0
+
+                    for point in points[1:]:
+                        p = tf.add_paragraph()
+                        p.text = point
+                        apply_body_style(p, font_size)
+                        p.level = 0
+                        p.space_before = BODY_LINE_SPACING
 
             # -- Speaker Notes & Sources --
             speaker_notes = slide_data.get("speaker_notes", "")
@@ -111,15 +160,17 @@ def create_presentation(filename: str, slides_content: str) -> str:
                     text_frame.text = content
 
             # -- Image --
-            image_path = slide_data.get("image")
-            if image_path and os.path.exists(image_path):
+            if has_image:
                 try:
-                    left = Inches(5.5)
-                    top = Inches(2)
-                    height = Inches(3.5)
-                    slide.shapes.add_picture(image_path, left, top, height=height)
+                    slide.shapes.add_picture(
+                        image_path,
+                        left=IMAGE_LEFT,
+                        top=IMAGE_TOP,
+                        height=IMAGE_HEIGHT,
+                    )
                 except Exception as e:
                     logger.warning(f"Could not add image {image_path}: {e}")
+
         path = FILE_PATH / f"{filename}.pptx"
         path.parent.mkdir(parents=True, exist_ok=True)
         prs.save(str(path.resolve()))

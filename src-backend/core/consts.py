@@ -1,5 +1,8 @@
 from pathlib import Path
 
+from pptx.dml.color import RGBColor
+from pptx.util import Inches, Pt
+
 FILE_PATH = Path(__file__).resolve().parent.parent.parent / "concluded_presentations"
 
 
@@ -14,11 +17,19 @@ DOMAIN_BLACKLIST = [
     "linkedin.com",
 ]
 
-DOMAIN_WHITELIST = [
-    "wikipedia.org",
-    "reuters.com",
-    "bloomberg.com",
-    "nature.com",
-    "sciencedirect.com",
-    "techcrunch.com",
-]
+TITLE_FONT_NAME = "Calibri"
+TITLE_FONT_SIZE = Pt(36)
+TITLE_FONT_COLOR = RGBColor(0, 51, 102)
+TITLE_BOLD = True
+
+BODY_FONT_NAME = "Calibri"
+BODY_FONT_SIZE = Pt(18)
+BODY_FONT_SIZE_WITH_IMAGE = Pt(14)
+BODY_FONT_COLOR = RGBColor(51, 51, 51)
+BODY_LINE_SPACING = Pt(8)
+
+IMAGE_HEIGHT = Inches(2.5)
+IMAGE_LEFT = Inches(5.0)
+IMAGE_TOP = Inches(2.2)
+
+BODY_WIDTH_WITH_IMAGE = Inches(4.5)
