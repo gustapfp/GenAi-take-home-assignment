@@ -7,6 +7,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 from mcp.server.fastmcp import FastMCP
 from pptx import Presentation
+from pptx.util import Inches
 from tavily import TavilyClient  # type: ignore
 
 from core.consts import (
@@ -17,8 +18,8 @@ from core.consts import (
     DOMAIN_BLACKLIST,
     FILE_PATH,
     IMAGE_HEIGHT,
-    IMAGE_LEFT,
-    IMAGE_TOP,
+    SLIDE_HEIGHT,
+    SLIDE_WIDTH,
 )
 from core.logger_config import logger
 from core.settings import settings
@@ -162,12 +163,14 @@ def create_presentation(filename: str, slides_content: str) -> str:
             # -- Image --
             if has_image:
                 try:
-                    slide.shapes.add_picture(
+                    picture = slide.shapes.add_picture(
                         image_path,
-                        left=IMAGE_LEFT,
-                        top=IMAGE_TOP,
+                        left=Inches(0),
+                        top=Inches(0),
                         height=IMAGE_HEIGHT,
                     )
+                    picture.left = (SLIDE_WIDTH - picture.width) // 2
+                    picture.top = (SLIDE_HEIGHT - picture.height) // 2
                 except Exception as e:
                     logger.warning(f"Could not add image {image_path}: {e}")
 
