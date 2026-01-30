@@ -34,7 +34,7 @@ async def run_ppt_workflow(topic: str, num_slides: int, filename: str):
         args=["-m", "mcp_server.mcp_server"],
     )
 
-    async with stdio_client(server_params) as (read, write):
+    async with stdio_client(server_params) as (read, write):  # noqa: SIM117
         async with ClientSession(read, write) as session:
             await session.initialize()
 
@@ -118,5 +118,7 @@ async def run_ppt_workflow(topic: str, num_slides: int, filename: str):
             )
 
             final_filename = f"{deck_content.filename_suggestion}.pptx"
-            logger.info(f"DONE! Presentation saved as: {FILE_PATH}/{final_filename}")
+            logger.info(
+                f"DONE! Presentation saved as: {FILE_PATH}/{deck_content.filename_suggestion}"
+            )
             return final_filename
