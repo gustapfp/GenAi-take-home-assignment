@@ -8,7 +8,7 @@ from matplotlib import pyplot as plt
 from mcp.server.fastmcp import FastMCP
 from pptx import Presentation
 from pptx.util import Inches
-from tavily import TavilyClient  # type: ignore
+from tavily import TavilyClient
 
 from core.consts import (
     BODY_FONT_SIZE,
