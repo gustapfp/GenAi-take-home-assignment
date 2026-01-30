@@ -1,4 +1,3 @@
-import json
 import os
 
 from fastapi import APIRouter, BackgroundTasks, HTTPException
@@ -12,9 +11,7 @@ from app.routes.presentation.schemas import (
 )
 from app.routes.presentation.utils import generate_pprt_id
 from core.consts import FILE_PATH
-from core.logger_config import logger
-from mcp_server.mcp_server import search_web
-from mcp_server.workflow import main_workflow
+from mcp_server.workflow import run_ppt_workflow
 
 presentation_router = APIRouter(
     prefix="/presentation",
@@ -36,8 +33,11 @@ async def generate_ppt(
     Returns:
         PresentationResponse - The response containing the message, status, and presentation ID.
     """
+    pprt_id = generate_pprt_id(request.topic)
     try:
-        background_tasks.add_task(main_workflow, topic=request.topic, slides=request.slides)
+        background_tasks.add_task(
+            run_ppt_workflow, topic=request.topic, num_slides=request.slides, filename=pprt_id
+        )
         return PresentationResponse(
             message="Presentation generation task created successfully! To retrieve the presentation, please use the pprt_id in the response.",
             status="Success",
@@ -72,31 +72,3 @@ async def download_ppt(pprt_id: str) -> FileResponse | PresentationDownloadRespo
             message="Presentation not found. Please check the presentation ID and try again in a few minutes.",
             status="Pending",
         )
-
-
-@presentation_router.get("/test")
-async def test() -> None:
-    query = "effect of quantum computing on encryption standards"
-
-    print(f"🔎 Searching Live: '{query}'...")
-    print("   (This involves fetching URL metadata, so it might take 5-10 seconds)...")
-
-    result = search_web(query)
-    data = json.loads(result)
-    logger.info(f"Data: {data}")
-    logger.info(f"Result: {result}")
-    if not data:
-        logger.error("❌ No Tier S/A results found (Filter might be too strict!)")
-        return
-
-    logger.info(f"\n✅ PASSED. Returning {len(data)} High-Quality Sources:\n")
-
-    for i, item in enumerate(data, 1):
-        v = item["validation"]
-        logger.info(
-            f"{i}. [{v['tier']}] Score: {v['score']} - {v['details'].get('author', 'No Author')}"
-        )
-        logger.info(f"   Url: {item['url']}")
-        logger.info(f"   Title/Snippet: {item['content'][:60]}...")
-        logger.info(f"   Content: {item['content']}")
-        logger.info("-" * 40)

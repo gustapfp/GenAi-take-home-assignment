@@ -1,3 +1,4 @@
+import re
 import uuid
 
 
@@ -10,4 +11,5 @@ def generate_pprt_id(topic: str) -> str:
     Returns:
         str: The unique presentation ID.
     """
-    return f"{topic}-{uuid.uuid4()}"
+    clean_topic = re.sub(r"[^a-zA-Z0-9_\-]", "", topic.replace(" ", "_"))
+    return f"{clean_topic}-{uuid.uuid4()}"

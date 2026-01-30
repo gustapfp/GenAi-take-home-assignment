@@ -59,6 +59,7 @@ class WriterAgent:
         content: PresentationContent,
         session: ClientSession,
         generated_assets: list[dict] | None = None,
+        filename: str = "",
     ):
         """
         Assembles the final PPT.
@@ -79,7 +80,7 @@ class WriterAgent:
         await session.call_tool(
             "create_presentation",
             arguments={
-                "filename": content.filename_suggestion,
+                "filename": filename,
                 "slides_content": json.dumps(slides_payload),
             },
         )
