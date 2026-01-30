@@ -1,4 +1,5 @@
 import json
+import os
 
 from mcp import ClientSession, StdioServerParameters
 from mcp.client.stdio import stdio_client
@@ -32,6 +33,7 @@ async def run_ppt_workflow(topic: str, num_slides: int, filename: str):
     server_params = StdioServerParameters(
         command="python",
         args=["-m", "mcp_server.mcp_server"],
+        env=dict(os.environ),
     )
 
     async with stdio_client(server_params) as (read, write):  # noqa: SIM117
@@ -117,8 +119,8 @@ async def run_ppt_workflow(topic: str, num_slides: int, filename: str):
                 filename=filename,
             )
 
-            final_filename = f"{deck_content.filename_suggestion}.pptx"
+            final_filename = f"{filename}.pptx"
             logger.info(
-                f"DONE! Presentation saved as: {FILE_PATH}/{deck_content.filename_suggestion}"
+                f"DONE! Presentation saved as: {FILE_PATH}/{filename}.pptx"
             )
             return final_filename

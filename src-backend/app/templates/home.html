@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aristotle - Generate Insights</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Syne:wght@600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary-purple: #8B5CF6;
+            --deep-navy: #1E1B3E;
+            --dark-purple: #2D2055;
+            --light-purple: #C4B5FD;
+            --accent-pink: #E879F9;
+            --white: #FFFFFF;
+            --gray-100: #F5F5F7;
+            --gray-200: #E5E5EA;
+        }
+
+        body {
+            font-family: 'DM Sans', sans-serif;
+            background: linear-gradient(135deg, #1E1B3E 0%, #2D2055 50%, #3D2F6B 100%);
+            min-height: 100vh;
+            color: var(--white);
+            overflow-x: hidden;
+        }
+
+        /* Animated background elements */
+        .bg-orbs {
+            position: fixed;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        .orb {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(80px);
+            opacity: 0.15;
+            animation: float 20s infinite ease-in-out;
+        }
+
+        .orb-1 {
+            width: 400px;
+            height: 400px;
+            background: radial-gradient(circle, var(--primary-purple), transparent);
+            top: -100px;
+            right: -100px;
+            animation-delay: 0s;
+        }
+
+        .orb-2 {
+            width: 500px;
+            height: 500px;
+            background: radial-gradient(circle, var(--accent-pink), transparent);
+            bottom: -150px;
+            left: -150px;
+            animation-delay: 5s;
+        }
+
+        .orb-3 {
+            width: 300px;
+            height: 300px;
+            background: radial-gradient(circle, #6366F1, transparent);
+            top: 50%;
+            left: 50%;
+            animation-delay: 10s;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            33% { transform: translate(50px, -50px) scale(1.1); }
+            66% { transform: translate(-30px, 30px) scale(0.9); }
+        }
+
+        .container {
+            position: relative;
+            z-index: 1;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 40px 24px;
+        }
+
+        /* Header */
+        header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 80px;
+            padding: 20px 0;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-family: 'Syne', sans-serif;
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--white);
+            text-decoration: none;
+        }
+
+        .logo-icon {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, var(--primary-purple), var(--accent-pink));
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+        }
+
+        /* Main content */
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 60px;
+            align-items: center;
+            margin-bottom: 60px;
+        }
+
+        .hero-text h1 {
+            font-family: 'Syne', sans-serif;
+            font-size: 56px;
+            font-weight: 800;
+            line-height: 1.1;
+            margin-bottom: 24px;
+            background: linear-gradient(135deg, var(--white) 0%, var(--light-purple) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .hero-text p {
+            font-size: 20px;
+            line-height: 1.6;
+            color: rgba(255, 255, 255, 0.8);
+            margin-bottom: 40px;
+        }
+
+        /* Card */
+        .generator-card {
+            background: rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 24px;
+            padding: 48px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .generator-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 30px 80px rgba(139, 92, 246, 0.2);
+            border-color: rgba(139, 92, 246, 0.4);
+        }
+
+        .card-title {
+            font-family: 'Syne', sans-serif;
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 24px;
+            color: var(--white);
+        }
+
+        .form-group {
+            margin-bottom: 24px;
+        }
+
+        label {
+            display: block;
+            font-size: 14px;
+            font-weight: 500;
+            margin-bottom: 12px;
+            color: rgba(255, 255, 255, 0.9);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 16px 20px;
+            font-size: 16px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid rgba(255, 255, 255, 0.15);
+            border-radius: 12px;
+            color: var(--white);
+            transition: all 0.3s ease;
+            font-family: 'DM Sans', sans-serif;
+        }
+
+        input[type="number"] {
+            width: 100%;
+            padding: 16px 20px;
+            font-size: 16px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid rgba(255, 255, 255, 0.15);
+            border-radius: 12px;
+            color: var(--white);
+            transition: all 0.3s ease;
+            font-family: 'DM Sans', sans-serif;
+        }
+
+        input[type="text"]:focus,
+        input[type="number"]:focus {
+            outline: none;
+            background: rgba(255, 255, 255, 0.12);
+            border-color: var(--primary-purple);
+            box-shadow: 0 0 0 4px rgba(139, 92, 246, 0.2);
+        }
+
+        input[type="text"]::placeholder,
+        input[type="number"]::placeholder {
+            color: rgba(255, 255, 255, 0.4);
+        }
+
+        .btn {
+            width: 100%;
+            padding: 18px 32px;
+            font-size: 16px;
+            font-weight: 600;
+            font-family: 'DM Sans', sans-serif;
+            background: linear-gradient(135deg, var(--primary-purple), var(--accent-pink));
+            color: var(--white);
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.5s ease;
+        }
+
+        .btn:hover::before {
+            left: 100%;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 32px rgba(139, 92, 246, 0.4);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* Status messages */
+        .status-message {
+            margin-top: 20px;
+            padding: 16px 20px;
+            border-radius: 12px;
+            font-size: 14px;
+            font-weight: 500;
+            display: none;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .status-message.show {
+            display: flex;
+        }
+
+        .status-message.processing {
+            background: rgba(99, 102, 241, 0.15);
+            border: 1px solid rgba(99, 102, 241, 0.3);
+            color: #A5B4FC;
+        }
+
+        .status-message.success {
+            background: rgba(34, 197, 94, 0.15);
+            border: 1px solid rgba(34, 197, 94, 0.3);
+            color: #86EFAC;
+        }
+
+        .status-message.error {
+            background: rgba(239, 68, 68, 0.15);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            color: #FCA5A5;
+        }
+
+        .spinner {
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-top-color: var(--white);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Responsive */
+        @media (max-width: 968px) {
+            .main-content {
+                grid-template-columns: 1fr;
+                gap: 40px;
+            }
+
+            .hero-text h1 {
+                font-size: 42px;
+            }
+
+            .generator-card {
+                padding: 32px;
+            }
+        }
+
+        @media (max-width: 640px) {
+            .hero-text h1 {
+                font-size: 36px;
+            }
+
+            .hero-text p {
+                font-size: 18px;
+            }
+
+            .generator-card {
+                padding: 24px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-orbs">
+        <div class="orb orb-1"></div>
+        <div class="orb orb-2"></div>
+        <div class="orb orb-3"></div>
+    </div>
+
+    <div class="container">
+        <header>
+            <a href="/" class="logo">
+                <div class="logo-icon">A</div>
+                <span>aristotle</span>
+            </a>
+        </header>
+
+        <div class="main-content">
+            <div class="hero-text">
+                <h1>Generate Fast & Accurate PowerPoints</h1>
+                <p>Aristotle is the next-generation workflow automation and data intelligence platform for your presentations.</p>
+            </div>
+
+            <div class="generator-card">
+                <h2 class="card-title">Create Your Presentation</h2>
+                <form id="generatorForm">
+                    <div class="form-group">
+                        <label for="topic">Presentation Topic</label>
+                        <input 
+                            type="text" 
+                            id="topic" 
+                            name="topic" 
+                            placeholder="Enter your topic (e.g., AI Market Analysis 2025)" 
+                            required
+                        >
+                    </div>
+                    <div class="form-group">
+                        <label for="slides">Number of Slides</label>
+                        <input 
+                            type="number" 
+                            id="slides" 
+                            name="slides" 
+                            placeholder="5" 
+                            min="1"
+                            max="50"
+                            value="5"
+                            required
+                        >
+                    </div>
+                    <button type="submit" class="btn" id="submitBtn">
+                        Generate Presentation
+                    </button>
+                </form>
+
+                <div id="statusMessage" class="status-message">
+                    <div class="spinner"></div>
+                    <span id="statusText">Processing your request...</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const form = document.getElementById('generatorForm');
+        const submitBtn = document.getElementById('submitBtn');
+        const statusMessage = document.getElementById('statusMessage');
+        const statusText = document.getElementById('statusText');
+        const topicInput = document.getElementById('topic');
+        const slidesInput = document.getElementById('slides');
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const topic = topicInput.value.trim();
+            const slides = parseInt(slidesInput.value) || 5;
+            
+            if (!topic) return;
+
+            // Disable form
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Generating...';
+            
+            // Show processing status
+            statusMessage.className = 'status-message processing show';
+            statusText.textContent = 'Creating your presentation...';
+
+            try {
+                // Create presentation
+                const response = await fetch('/presentation/generate_ppt', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ topic, slides }),
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to create presentation');
+                }
+
+                const data = await response.json();
+                const pptId = data.pprt_id;
+
+                // Wait for completion using SSE
+                waitForCompletion(pptId);
+
+            } catch (error) {
+                console.error('Error:', error);
+                statusMessage.className = 'status-message error show';
+                statusText.textContent = 'Failed to generate presentation. Please try again.';
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Generate Presentation';
+            }
+        });
+
+        function waitForCompletion(pptId) {
+            // Use Server-Sent Events to wait for completion
+            const eventSource = new EventSource(`/presentation/status/${pptId}`);
+            
+            eventSource.onmessage = (event) => {
+                const data = JSON.parse(event.data);
+                
+                if (data.status === 'ready') {
+                    // Close the SSE connection
+                    eventSource.close();
+                    
+                    // File is ready - show success and download
+                    statusMessage.className = 'status-message success show';
+                    statusText.textContent = 'Presentation ready! Downloading...';
+                    
+                    // Trigger download
+                    setTimeout(() => {
+                        window.location.href = `/presentation/download/${pptId}`;
+                        
+                        // Reset form after download starts
+                        setTimeout(() => {
+                            statusMessage.className = 'status-message';
+                            submitBtn.disabled = false;
+                            submitBtn.textContent = 'Generate Presentation';
+                            topicInput.value = '';
+                            slidesInput.value = '5';
+                        }, 2000);
+                    }, 500);
+                    
+                } else if (data.status === 'timeout') {
+                    eventSource.close();
+                    statusMessage.className = 'status-message error show';
+                    statusText.textContent = 'Generation timed out. Please try again.';
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = 'Generate Presentation';
+                }
+            };
+            
+            eventSource.onerror = (error) => {
+                console.error('SSE error:', error);
+                eventSource.close();
+                statusMessage.className = 'status-message error show';
+                statusText.textContent = 'Connection lost. Please try again.';
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Generate Presentation';
+            };
+        }
+    </script>
+</body>
+</html>

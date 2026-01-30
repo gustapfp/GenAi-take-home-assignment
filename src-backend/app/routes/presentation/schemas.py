@@ -1,10 +1,11 @@
 from typing import Literal
+
 from pydantic import BaseModel, Field
 
 
 class PresentationRequest(BaseModel):
     topic: str
-    slides: int = Field(default=5, gt=1, le=100)
+    slides: int = Field(default=5, gt=1, le=10)  # Max 10 slide due to api key cost
 
 
 class PresentationResponse(BaseModel):
