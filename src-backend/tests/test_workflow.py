@@ -1,3 +1,4 @@
+import json
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -155,6 +156,182 @@ class TestPlannerAgent:
             result = await agent.create_presentation_plan(payload)
             assert result.topic == "Test"
             assert mock_parse.call_count == 2
+
+
+class TestResearcherAgent:
+    """Tests for ResearcherAgent."""
+
+    @pytest.mark.asyncio
+    async def test_research_web_empty_results(self):
+        """Test research_web handles empty results."""
+        from mcp_server.agents.researcher.agent import ResearcherAgent
+        from mcp_server.agents.researcher.schemas import ResearcherPayload
+
+        agent = ResearcherAgent()
+        mock_session = AsyncMock()
+
+        mock_result = MagicMock()
+        mock_result.content = []
+        mock_session.call_tool.return_value = mock_result
+
+        payload = ResearcherPayload(slide_title="Test Slide", search_queries=["test query"])
+
+        result = await agent.research_web(payload, mock_session)
+
+        assert result.slide_topic == "Test Slide"
+        assert len(result.facts) == 0
+
+    @pytest.mark.asyncio
+    async def test_summarize_facts_success(self):
+        """Test successful fact summarization."""
+        from mcp_server.agents.researcher.agent import ResearcherAgent
+        from mcp_server.agents.researcher.schemas import Fact, ResearchSummary
+
+        agent = ResearcherAgent()
+
+        mock_summary = ResearchSummary(
+            slide_topic="AI Trends",
+            facts=[
+                Fact(content="AI is growing fast", source_url="https://example.com"),
+            ],
+        )
+
+        mock_response = MagicMock()
+        mock_response.choices = [MagicMock(message=MagicMock(parsed=mock_summary))]
+
+        with patch.object(
+            agent.client.beta.chat.completions, "parse", new_callable=AsyncMock
+        ) as mock_parse:
+            mock_parse.return_value = mock_response
+
+            result = await agent.summarize_facts(
+                raw_context=["Some context"], slide_title="AI Trends"
+            )
+
+            assert result.slide_topic == "AI Trends"
+            assert len(result.facts) == 1
+
+
+class TestWriterAgent:
+    """Tests for WriterAgent."""
+
+    @pytest.mark.asyncio
+    async def test_prepare_presentation_success(self):
+        """Test successful presentation preparation."""
+        from mcp_server.agents.writer.agent import WriterAgent
+        from mcp_server.agents.writer.schemas import (
+            ChartData,
+            PresentationContent,
+            SlideContent,
+            VisualRequest,
+        )
+
+        agent = WriterAgent()
+
+        mock_content = PresentationContent(
+            filename_suggestion="test_presentation",
+            slides=[
+                SlideContent(
+                    title="Introduction",
+                    points=["Point 1", "Point 2"],
+                    speaker_notes="Notes",
+                    sources=["https://source.com"],
+                    visual_request=VisualRequest(
+                        type="chart",
+                        prompt="Revenue Chart",
+                        data_json=ChartData(labels=["Q1", "Q2"], values=[100.0, 200.0], unit="USD"),
+                    ),
+                ),
+            ],
+        )
+
+        mock_response = MagicMock()
+        mock_response.choices = [MagicMock(message=MagicMock(parsed=mock_content))]
+
+        with patch.object(
+            agent.client.beta.chat.completions, "parse", new_callable=AsyncMock
+        ) as mock_parse:
+            mock_parse.return_value = mock_response
+
+            result = await agent.prepare_presentation(
+                topic="Test",
+                plan_json={"topic": "Test", "slides": []},
+                research_data=[],
+            )
+
+            assert result.filename_suggestion == "test_presentation"
+            assert len(result.slides) == 1
+
+    @pytest.mark.asyncio
+    async def test_write_presentation_calls_mcp_tool(self):
+        """Test write_presentation calls the MCP tool correctly."""
+        from mcp_server.agents.writer.agent import WriterAgent
+        from mcp_server.agents.writer.schemas import (
+            PresentationContent,
+            SlideContent,
+        )
+
+        agent = WriterAgent()
+        mock_session = AsyncMock()
+
+        content = PresentationContent(
+            filename_suggestion="test",
+            slides=[
+                SlideContent(
+                    title="Test Slide",
+                    points=["Point 1"],
+                    speaker_notes=None,
+                    sources=None,
+                ),
+            ],
+        )
+
+        await agent.write_presentation(content=content, session=mock_session, filename="test_file")
+
+        mock_session.call_tool.assert_called_once_with(
+            "create_presentation",
+            arguments={
+                "filename": "test_file",
+                "slides_content": json.dumps(
+                    [
+                        {
+                            "title": "Test Slide",
+                            "points": ["Point 1"],
+                            "speaker_notes": None,
+                            "sources": None,
+                        }
+                    ]
+                ),
+            },
+        )
+
+    @pytest.mark.asyncio
+    async def test_validate_response_requires_chart(self):
+        """Test validation requires at least one chart."""
+        from mcp_server.agents.writer.agent import WriterAgent
+        from mcp_server.agents.writer.schemas import (
+            PresentationContent,
+            SlideContent,
+        )
+
+        agent = WriterAgent()
+        agent.retry_count = 3
+
+        content = PresentationContent(
+            filename_suggestion="test",
+            slides=[
+                SlideContent(
+                    title="Test",
+                    points=["Point"],
+                    speaker_notes=None,
+                    sources=None,
+                    visual_request=None,
+                ),
+            ],
+        )
+
+        with pytest.raises(ValueError, match="No chart generated"):
+            await agent._validate_response(content, "Test", {}, [])
 
 
 if __name__ == "__main__":
