@@ -11,7 +11,7 @@ from app.routes.presentation.schemas import (
 )
 from app.routes.presentation.utils import generate_pprt_id
 from core.consts import FILE_PATH
-from mcp_server.mcp_server import generate_chart
+from mcp_server.mcp_server import get_stock_image
 from mcp_server.workflow import main_workflow
 
 presentation_router = APIRouter(
@@ -74,13 +74,20 @@ async def download_ppt(pprt_id: str) -> FileResponse | PresentationDownloadRespo
 
 @presentation_router.get("/test")
 async def test() -> None:
-    # Mock data usually provided by the Illustrator/Writer agent
-    test_data = '{"labels": ["2024", "2025", "2026"], "values": [1.5, 4.2, 8.9]}'
+    print("--- 1. Starting Live Test ---")
+    query = "cyberpunk city neon lights"
 
-    print("Testing Bar Chart...")
-    path = generate_chart(test_data, "bar", "AI Market Growth (Billions)")
-    print(f"Generated: {path}")
+    # Call the function directly
+    file_path = get_stock_image(query)
 
-    print("\nTesting Pie Chart...")
-    path_pie = generate_chart(test_data, "pie", "Market Share Distribution")
-    print(f"Generated: {path_pie}")
+    # Validation
+    if "Error" in file_path:
+        print(f"❌ Failed: {file_path}")
+    elif os.path.exists(file_path):
+        size_kb = os.path.getsize(file_path) / 1024
+        print(f"✅ Success! Image saved at: {file_path}")
+        print(f"   Size: {size_kb:.2f} KB")
+        # Optional: Open the file to verify visually
+        # os.startfile(file_path) # Windows only
+    else:
+        print("❌ File path returned but file not found on disk.")

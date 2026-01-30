@@ -1,11 +1,14 @@
 import json
+import os
 from datetime import datetime
 from typing import Literal
 
 import numpy as np
+import requests
 from matplotlib import pyplot as plt
 from mcp.server.fastmcp import FastMCP
 from pptx import Presentation
+from pptx.util import Inches
 from tavily import TavilyClient  # type: ignore
 
 from core.consts import DOMAIN_BLACKLIST, FILE_PATH
@@ -81,7 +84,15 @@ def create_presentation(filename: str, slides_content: str) -> str:
             for point in slide_data.get("points", []):
                 p = tf.add_paragraph()
                 p.text = point
-
+            image_path = slide_data.get("image")
+            if image_path and os.path.exists(image_path):
+                try:
+                    left = Inches(5.5)
+                    top = Inches(2)
+                    height = Inches(3.5)
+                    slide.shapes.add_picture(image_path, left, top, height=height)
+                except Exception as e:
+                    print(f"Warning: Could not add image {image_path}: {e}")
         path = FILE_PATH / f"{filename}.pptx"
         path.parent.mkdir(parents=True, exist_ok=True)
         prs.save(str(path.resolve()))
@@ -163,6 +174,48 @@ def generate_chart(data_json: str, chart_type: str, title: str) -> str:
         return "Error: Invalid JSON string provided."
     except Exception as e:
         return f"Error generating chart: {str(e)}"
+
+
+@mcp_server.tool(
+    name="get_stock_image",
+    description="Search for a stock image based on the query.",
+)
+def get_stock_image(query: str) -> str:
+    """Search for a stock image based on the query.
+
+    Args:
+        query (str): The query to search for a stock image.
+
+    Returns:
+        str: The file path of the downloaded image.
+    """
+    logger.info(f"Searching for image: '{query}'")
+
+    try:
+        sanitized_query = query.replace(" ", ",")
+        image_url = f"https://source.unsplash.com/800x600/?{sanitized_query}"
+        safe_query = query.replace(" ", "%20")
+        image_url = (
+            f"https://image.pollinations.ai/prompt/{safe_query}?width=800&height=600&nologo=true"
+        )
+
+        response = requests.get(image_url, timeout=10)
+        if response.status_code != 200:
+            return f"Error: Failed to download image (Status {response.status_code})"
+
+        timestamp = int(datetime.now().timestamp())
+        filename = f"img_{timestamp}.jpg"
+        filepath = FILE_PATH / "images" / filename
+        filepath.parent.mkdir(parents=True, exist_ok=True)
+
+        with open(filepath, "wb") as f:
+            f.write(response.content)
+
+        logger.info(f"Image saved to {filepath}")
+        return str(filepath)
+
+    except Exception as e:
+        return f"Error getting stock image: {str(e)}"
 
 
 if __name__ == "__main__":
