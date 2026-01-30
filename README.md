@@ -180,3 +180,17 @@ uv run uvicorn main:api --reload --host 0.0.0.0 --port 8000
 ```
 
 Use the same `.env` at the project root (or ensure `core.settings` can load your env file). Generated files will appear in `concluded_presentations/` relative to the project root.
+
+### Run tests
+
+**With Docker Compose** (from the repository root):
+
+```bash
+docker compose run --rm backend uv run pytest
+```
+
+**With uv** (from `src-backend/`):
+
+```bash
+uv run pytest
+```

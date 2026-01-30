@@ -13,7 +13,9 @@ api = FastAPI(
     description="API for generating PowerPoint presentations with a MCP server.",
     version="1.0.0",
 )
+
 templates = Jinja2Templates(directory=BASE_DIR / "app" / "templates")
+
 api.include_router(presentation_router)
 
 
