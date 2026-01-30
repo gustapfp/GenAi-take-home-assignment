@@ -98,4 +98,24 @@ class WriterAgent:
                 logger.warning(f"WRITER_AGENT: Retrying {self.retry_count}/3...")
                 return await self.prepare_presentation(topic, plan, research)
             raise ValueError(f"No response after retries for topic='{topic}'")
+
+        # Validate at least one chart exists
+        has_chart = any(
+            slide.visual_request
+            and slide.visual_request.type == "chart"
+            and slide.visual_request.data_json
+            for slide in content.slides
+        )
+
+        if not has_chart:
+            if self.retry_count < 3:
+                self.retry_count += 1
+                logger.warning(
+                    f"WRITER_AGENT: No chart found in presentation. Retrying {self.retry_count}/3..."
+                )
+                return await self.prepare_presentation(topic, plan, research)
+            raise ValueError(
+                f"No chart generated after {self.retry_count} retries for topic='{topic}'"
+            )
+
         return content
