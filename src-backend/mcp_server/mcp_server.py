@@ -1,11 +1,9 @@
 import json
 import os
 from datetime import datetime
-from pathlib import Path
 from typing import Literal
 
 import numpy as np
-import requests
 from matplotlib import pyplot as plt
 from mcp.server.fastmcp import FastMCP
 from pptx import Presentation
@@ -77,8 +75,7 @@ def create_presentation(filename: str, slides_content: str) -> str:
     try:
         data = json.loads(slides_content)
 
-        template_path = Path(__file__).resolve().parent / "helper" / "template.pptx"
-        prs = Presentation(str(template_path))
+        prs = Presentation()
 
         for slide_data in data:
             # -- Bullet layout --
@@ -97,8 +94,6 @@ def create_presentation(filename: str, slides_content: str) -> str:
             for i, point in enumerate(slide_data.get("points", [])):
                 p = tf.add_paragraph()
                 p.text = point
-                # for run in p.runs:
-                #     run.font.size = Pt(12) if i == 0 else Pt(10)
 
             # -- Speaker Notes & Sources --
             speaker_notes = slide_data.get("speaker_notes", "")
@@ -206,43 +201,6 @@ def generate_chart(data_json: str, chart_type: str, title: str) -> str:
         return "Error: Invalid JSON string provided."
     except Exception as e:
         return f"Error generating chart: {str(e)}"
-
-
-@mcp_server.tool(
-    name="get_stock_image",
-    description="Search for a stock image based on the query.",
-)
-def get_stock_image(query: str) -> str:
-    """Search for a stock image based on the query.
-
-    Args:
-        query (str): The query to search for a stock image.
-
-    Returns:
-        str: The file path of the downloaded image.
-    """
-    logger.info(f"Searching for image: '{query}'")
-
-    try:
-        sanitized_query = query.replace(" ", ",")
-        image_url = f"https://source.unsplash.com/800x600/?{sanitized_query}"
-        response = requests.get(image_url, timeout=10)
-        if response.status_code != 200:
-            return f"Error: Failed to download image (Status {response.status_code})"
-
-        timestamp = int(datetime.now().timestamp())
-        filename = f"img_{timestamp}.jpg"
-        filepath = FILE_PATH / "images" / filename
-        filepath.parent.mkdir(parents=True, exist_ok=True)
-
-        with open(filepath, "wb") as f:
-            f.write(response.content)
-
-        logger.info(f"Image saved to {filepath}")
-        return str(filepath)
-
-    except Exception as e:
-        return f"Error getting stock image: {str(e)}"
 
 
 if __name__ == "__main__":

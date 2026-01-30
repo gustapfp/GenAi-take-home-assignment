@@ -59,19 +59,6 @@ class IllustratorAgent:
                         )
                     )
 
-                elif req_type == "image":
-                    print(f"   > Searching image for Slide {slide_num}...")
-                    result = await session.call_tool("get_stock_image", arguments={"query": prompt})
-                    url = result.content[0].text
-                    generated_assets.append(
-                        VisualAsset(
-                            slide_number=slide_num,
-                            asset_type="image",
-                            description=prompt,
-                            file_path=url,
-                        )
-                    )
-
             except Exception as e:
                 print(f"Failed to create visual for Slide {slide_num}: {e}")
 
