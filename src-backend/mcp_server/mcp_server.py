@@ -12,9 +12,7 @@ from tavily import TavilyClient
 
 from core.consts import (
     BODY_FONT_SIZE,
-    BODY_FONT_SIZE_WITH_IMAGE,
     BODY_LINE_SPACING,
-    BODY_WIDTH_WITH_IMAGE,
     DOMAIN_BLACKLIST,
     FILE_PATH,
     IMAGE_HEIGHT,
@@ -89,61 +87,64 @@ def create_presentation(filename: str, slides_content: str) -> str:
         prs = Presentation()
 
         for slide_data in data:
-            slide_layout = prs.slide_layouts[0]
-            for layout in prs.slide_layouts:
-                layout_name = layout.name.lower()
-                if "content" in layout_name or "text" in layout_name:
-                    slide_layout = layout
-                    break
-                if "title" in layout_name and "only" not in layout_name:
-                    slide_layout = layout
-
-            slide = prs.slides.add_slide(slide_layout)
-
             image_path = slide_data.get("image")
             has_image = image_path and os.path.exists(image_path)
 
-            # -- Title --
+            if has_image:
+                blank_idx = min(6, len(prs.slide_layouts) - 1)
+                slide_layout = prs.slide_layouts[blank_idx]
+                for layout in prs.slide_layouts:
+                    if "blank" in layout.name.lower():
+                        slide_layout = layout
+                        break
+            else:
+                slide_layout = prs.slide_layouts[0]
+                for layout in prs.slide_layouts:
+                    layout_name = layout.name.lower()
+                    if "content" in layout_name or "text" in layout_name:
+                        slide_layout = layout
+                        break
+                    if "title" in layout_name and "only" not in layout_name:
+                        slide_layout = layout
+
+            slide = prs.slides.add_slide(slide_layout)
             title = slide.shapes.title
             if title:
                 title.text = slide_data.get("title", "No Title")
                 apply_title_style(title)
 
-            # -- Body --
+            if not has_image:
+                # -- Title --
 
-            body_shape = None
-            for shape in slide.placeholders:
-                if hasattr(shape, "placeholder_format") and shape.placeholder_format.idx == 1:
-                    body_shape = shape
-                    break
+                # -- Body --
+                body_shape = None
+                for shape in slide.placeholders:
+                    if hasattr(shape, "placeholder_format") and shape.placeholder_format.idx == 1:
+                        body_shape = shape
+                        break
 
-            if body_shape is None:
-                placeholders = list(slide.placeholders)
-                if len(placeholders) > 1:
-                    body_shape = placeholders[1]
+                if body_shape is None:
+                    placeholders = list(slide.placeholders)
+                    if len(placeholders) > 1:
+                        body_shape = placeholders[1]
 
-            if body_shape:
-                tf = body_shape.text_frame  # pyright: ignore[reportAttributeAccessIssue]
-                tf.word_wrap = True
+                if body_shape:
+                    tf = body_shape.text_frame  # pyright: ignore[reportAttributeAccessIssue]
+                    tf.word_wrap = True
+                    font_size = BODY_FONT_SIZE
+                    points = slide_data.get("points", [])
 
-                if has_image:
-                    body_shape.width = BODY_WIDTH_WITH_IMAGE
+                    if points:
+                        tf.paragraphs[0].text = points[0]
+                        apply_body_style(tf.paragraphs[0], font_size)
+                        tf.paragraphs[0].level = 0
 
-                font_size = BODY_FONT_SIZE_WITH_IMAGE if has_image else BODY_FONT_SIZE
-
-                points = slide_data.get("points", [])
-
-                if points:
-                    tf.paragraphs[0].text = points[0]
-                    apply_body_style(tf.paragraphs[0], font_size)
-                    tf.paragraphs[0].level = 0
-
-                    for point in points[1:]:
-                        p = tf.add_paragraph()
-                        p.text = point
-                        apply_body_style(p, font_size)
-                        p.level = 0
-                        p.space_before = BODY_LINE_SPACING
+                        for point in points[1:]:
+                            p = tf.add_paragraph()
+                            p.text = point
+                            apply_body_style(p, font_size)
+                            p.level = 0
+                            p.space_before = BODY_LINE_SPACING
 
             # -- Speaker Notes & Sources --
             speaker_notes = slide_data.get("speaker_notes", "")
