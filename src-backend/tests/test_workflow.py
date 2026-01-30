@@ -1,4 +1,4 @@
-from unittest.mock import MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
@@ -71,6 +71,90 @@ class TestSourceValidator:
 
         assert result["status"] == "dead"
         assert result["tier"] == "C"
+
+
+class TestPlannerAgent:
+    """Tests for PlannerAgent."""
+
+    @pytest.mark.asyncio
+    async def test_create_presentation_plan_success(self):
+        """Test successful presentation plan creation."""
+        from mcp_server.agents.planner.agent import PlannerAgent
+        from mcp_server.agents.planner.schemas import (
+            PresentationPayload,
+            PresentationPlan,
+            SlidePlan,
+        )
+
+        agent = PlannerAgent()
+
+        mock_plan = PresentationPlan(
+            topic="Test Topic",
+            slides=[
+                SlidePlan(
+                    slide_number=i,
+                    title=f"Slide {i}",
+                    search_queries=[f"query{i}"],
+                    content_goal=f"Goal {i}",
+                )
+                for i in range(3)
+            ],
+        )
+
+        mock_response = MagicMock()
+        mock_response.choices = [MagicMock(message=MagicMock(parsed=mock_plan))]
+
+        with patch.object(
+            agent.client.beta.chat.completions, "parse", new_callable=AsyncMock
+        ) as mock_parse:
+            mock_parse.return_value = mock_response
+
+            payload = PresentationPayload(topic="Test Topic", num_slides=3)
+            result = await agent.create_presentation_plan(payload)
+
+            assert result.topic == "Test Topic"
+            assert len(result.slides) == 3
+            mock_parse.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_validate_response_retries_on_none(self):
+        """Test validation retries when response is None."""
+        from mcp_server.agents.planner.agent import PlannerAgent
+        from mcp_server.agents.planner.schemas import (
+            PresentationPayload,
+            PresentationPlan,
+            SlidePlan,
+        )
+
+        agent = PlannerAgent()
+        payload = PresentationPayload(topic="Test", num_slides=2)
+
+        valid_plan = PresentationPlan(
+            topic="Test",
+            slides=[
+                SlidePlan(
+                    slide_number=i,
+                    title=f"Slide {i}",
+                    search_queries=["q"],
+                    content_goal="Goal",
+                )
+                for i in range(2)
+            ],
+        )
+
+        mock_responses = [
+            MagicMock(choices=[MagicMock(message=MagicMock(parsed=None))]),
+            MagicMock(choices=[MagicMock(message=MagicMock(parsed=valid_plan))]),
+        ]
+
+        with patch.object(
+            agent.client.beta.chat.completions, "parse", new_callable=AsyncMock
+        ) as mock_parse:
+            mock_parse.side_effect = mock_responses
+
+            result = await agent.create_presentation_plan(payload)
+            assert result.topic == "Test"
+            assert mock_parse.call_count == 2
 
 
 if __name__ == "__main__":
