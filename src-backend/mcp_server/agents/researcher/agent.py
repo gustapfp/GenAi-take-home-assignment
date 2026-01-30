@@ -39,7 +39,7 @@ class ResearcherAgent:
         if not raw_context:
             return ResearchSummary(slide_topic=payload.slide_title, facts=[])
 
-        return ResearchSummary(slide_topic=payload.slide_title, facts=raw_context)
+        return await self.summarize_facts(raw_context, payload.slide_title)
 
     async def summarize_facts(self, raw_context: list[str], slide_title: str) -> ResearchSummary:
         """Summarizes the facts from the raw context.

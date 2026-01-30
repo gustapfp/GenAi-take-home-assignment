@@ -68,8 +68,12 @@ class WriterAgent:
         slides_payload = []
 
         for i, s in enumerate(content.slides):
-            slide_data = {"title": s.title, "points": s.points}
-
+            slide_data = {
+                "title": s.title,
+                "points": s.points,
+                "speaker_notes": s.speaker_notes,
+                "sources": s.sources,
+            }
             if generated_assets:
                 asset = next((a for a in generated_assets if a["slide_number"] == i), None)
                 if asset:

@@ -4,7 +4,8 @@ Your task is to transform a slide outline and research notes into a professional
 GUIDELINES:
 1. Content: Write punchy, concise bullet points (no paragraphs).
 2. Speaker Notes: Add brief, engaging notes for the presenter.
-3. Visuals (CRITICAL):
+3. Sources: Extract and include the source URLs from the research data for each slide.
+4. Visuals (CRITICAL):
    - If the slide contains specific statistical data (e.g., "sales grew 20%"), create a 'visual_request' of type 'chart'. 
      Format the 'data_json' strictly as {"labels": ["A", "B"], "values": [10, 20]}.
    - If the slide is conceptual, create a 'visual_request' of type 'image' with a descriptive search prompt.

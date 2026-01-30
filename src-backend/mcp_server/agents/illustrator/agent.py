@@ -36,7 +36,7 @@ class IllustratorAgent:
             slide_num = req.get("slide_number", 0)
             req_type = req.get("type", "")
             prompt = req.get("prompt", "")
-            data = req.get("data", {})
+            data = req.get("data_json", {})
 
             try:
                 if req_type == "chart" and data:
@@ -60,7 +60,6 @@ class IllustratorAgent:
                     )
 
                 elif req_type == "image":
-                    # Call the image search tool
                     print(f"   > Searching image for Slide {slide_num}...")
                     result = await session.call_tool("get_stock_image", arguments={"query": prompt})
                     url = result.content[0].text
