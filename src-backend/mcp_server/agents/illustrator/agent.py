@@ -1,3 +1,5 @@
+import json
+
 from mcp import ClientSession
 from openai import AsyncOpenAI
 
@@ -41,10 +43,11 @@ class IllustratorAgent:
             try:
                 if req_type == "chart" and data:
                     print(f"   > Generating chart for Slide {slide_num}...")
+                    data_json_str = json.dumps(data) if isinstance(data, dict) else data
                     result = await session.call_tool(
                         "generate_chart",
                         arguments={
-                            "data_json": data,
+                            "data_json": data_json_str,
                             "chart_type": "bar",
                             "title": prompt,
                         },
